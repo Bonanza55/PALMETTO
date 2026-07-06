@@ -23,7 +23,7 @@ except ImportError:
     serial = None
 
 # --- User Adjustable Configuration Variables ---
-MAX_PAYLOAD_CHARS = 256
+MAX_PAYLOAD_CHARS = 512
 SAMPLE_RATE = 48000
 GAP_SECONDS = 3.0
 
@@ -39,7 +39,7 @@ PTT_TXDELAY = 1.0
 PTT_TAIL = 0.1                 
 
 # --- FSK Configuration ---
-FSK_BAUD = 100                  
+FSK_BAUD = 300                  
 FSK_TONE_MARK = 1200            
 FSK_TONE_SPACE = 2400           
 FSK_PREAMBLE_BITS = 128         
