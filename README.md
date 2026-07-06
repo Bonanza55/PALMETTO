@@ -16,3 +16,7 @@ You will need.
 
   DigRig mobile TNC with the universal cable for your radio
   Nooelec NESDR SMArt V5 Bundle and a USBA to USBC cable
+
+Bonus!
+  fsk_wfmd FM broadcast radio player. 120 second buffer, so just wait. 
+  ./fsk_wfmd -f 89300000 &
