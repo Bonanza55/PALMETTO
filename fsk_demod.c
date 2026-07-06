@@ -6,7 +6,7 @@
 
 // === STANDARD PACKET RADIO PARAMETERS ===
 #define SAMPLE_RATE      48000
-#define BAUD_RATE        100                       // matches the modulator
+#define BAUD_RATE        300                       // matches the modulator
 #define SAMPLES_PER_SYM  (SAMPLE_RATE / BAUD_RATE) // 160 samples/symbol
 
 #define TONE_MARK        1200.0f                   // binary 1 (Bell 202 Mark)
