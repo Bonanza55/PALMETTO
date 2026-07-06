@@ -29,7 +29,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 
 # --- FSK Configuration (display-only; the C demodulator is authoritative) ---
-FSK_BAUD = 100                  # symbols/sec (matches fsk_demod.c BAUD_RATE)
+FSK_BAUD = 300                  # symbols/sec (matches fsk_demod.c BAUD_RATE)
 FSK_TONE_MARK = 1200            # mark tone (binary 1)
 FSK_TONE_SPACE = 2400           # space tone (binary 0)
 FSK_PREAMBLE_BITS = 128         # Longer preamble for better sync
