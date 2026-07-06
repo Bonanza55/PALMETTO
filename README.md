@@ -2,7 +2,7 @@
 PALMETTO is a one-way, store-on-arrival text messaging and telemetry protocol for narrowband VHF FM voice channels, using audio frequency-shift keying (AFSK). 
 
 How to start the reciever service. 
-  ./fsk_rxd -f 147550000 -p 60 -g 420 2>> rxd.stderr.log &
+  ./fsk_rxd -f 147550000 -e 40 -p 60 -g 200 -q 18
 
 How to start the transmitter.
   python3 FSKModIc.py & 
@@ -17,6 +17,10 @@ You will need.
   DigRig mobile TNC with the universal cable for your radio
   Nooelec NESDR SMArt V5 Bundle and a USBA to USBC cable
 
-Bonus!
+FM Player
   fsk_wfmd FM broadcast radio player. 120 second buffer, so just wait. 
   ./fsk_wfmd -f 89300000 &
+
+Wave File Analyzer
+  python3 wav_analyzer.py wavFile minFQ maxFQ FFT startSec endSec zoomSec mark space
+  python3 wav_analyzer.py fsk_260706.163413.wav 1000 4000 2400 3.0 4.25 3.33 1200 2400
