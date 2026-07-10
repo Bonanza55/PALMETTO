@@ -2,7 +2,7 @@
 PALMETTO is a one-way, store-on-arrival text messaging and telemetry protocol for narrowband VHF FM voice channels, using audio frequency-shift keying (AFSK). 
 
 How to start the reciever service. 
-  ./fsk_rxd -f 147550000 -e 40 -p 60 -g 200 -q 18
+  ./fsk_rxd -f 147550000 -e 40 -p 60 -g 200 -q 18 2>> fsx_rxd.log
 
 How to start the transmitter.
   python3 FSKModIc.py & 
