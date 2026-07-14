@@ -206,6 +206,9 @@ class FSKModulatorGUI:
         element_gap = dot_duration
         character_gap = dot_duration * 3
         
+        # --- Set the target amplitude to match the FSK payload (-7.2 dBFS) ---
+        cw_amplitude = 0.4363
+        
         morse_parts = []
         for idx, char in enumerate(callsign):
             if char not in MORSE_DICT:
@@ -216,7 +219,9 @@ class FSKModulatorGUI:
                 num_samples = int(round(duration * SAMPLE_RATE))
                 
                 t = np.arange(num_samples) / SAMPLE_RATE
-                tone = np.sin(2 * np.pi * MORSE_FREQ * t).astype(np.float32)
+                
+                # --- Apply the amplitude multiplier to the sine wave ---
+                tone = (cw_amplitude * np.sin(2 * np.pi * MORSE_FREQ * t)).astype(np.float32)
                 
                 ramp_samples = min(int(0.005 * SAMPLE_RATE), num_samples // 2)
                 if ramp_samples > 0:
