@@ -1,23 +1,4 @@
 #!/usr/bin/env python3
-"""
-FSKDemodIc.py - Viewer / decoder for the FSK receive chain.
-
-    Capture and DSP now run unattended in the fsk_rxd daemon, which drops
-    finished fsk_YYMMDD.hhmmss.wav files into the working directory (a
-    "radio mailbox"). This GUI is just the front end for those WAVs:
-
-        * Scan       -> list recent fsk_*.wav captures
-        * Decode     -> run fsk_demod on the selected WAV (user-driven)
-        * View       -> show the decode, and reload cached decodes on select
-        * Archive    -> move fsk_*.wav / .txt / .log out to ./Archive
-
-    fsk_demod runs on a worker thread so the UI stays live.
-
-    LOOK & FEEL: styled to match FSKModIc.py -- same title/info header,
-    LabelFrame sections with italic gray hints, green compatibility line,
-    emoji status messages, and bottom button bar conventions.
-"""
-
 import os
 import re
 import glob
@@ -25,8 +6,15 @@ import queue
 import shutil
 import threading
 import subprocess
+import argparse
+import base64
+import getpass
 import tkinter as tk
 from tkinter import ttk, messagebox
+
+from cryptography.fernet import Fernet, InvalidToken
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 # --- FSK Configuration (display-only; the C demodulator is authoritative) ---
 FSK_BAUD = 300                  # symbols/sec (matches fsk_demod.c BAUD_RATE)
@@ -38,23 +26,30 @@ FSK_SYNC_BITS = 16              # 16-bit sync
 # Maximum number of recent captures shown in the dropdown
 MAX_CAPTURES_SHOWN = 8
 
-# Daemon capture filename: fsk_YYMMDD.hhmmss (UTC, dot separator).
 TS_RE = re.compile(r"^fsk_(\d{6})\.(\d{6})$")
-# Legacy pipeline filename: fsk_YYYYMMDD_HHMMSS (older captures).
 TS_RE_LEGACY = re.compile(r"^fsk_(\d{8})_(\d{6})$")
 
+def derive_key(passkey: str) -> bytes:
+    """Derive a secure Fernet 32-byte key from a text passkey using PBKDF2."""
+    salt = b'palmetto_fsk_static_salt'
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=100000,
+    )
+    return base64.urlsafe_b64encode(kdf.derive(passkey.encode('utf-8')))
 
 class FSKViewerGUI:
-    def __init__(self, root):
+    def __init__(self, root, passkey=None):
         self.root = root
-        self.root.title(f"PALMETTO RX")
+        self.passkey = passkey
+        self.root.title("PALMETTO RX" + (" (Decryption Enabled)" if self.passkey else ""))
         self.root.geometry("650x550")
         self.root.minsize(600, 520)
 
-        # Pin the GUI to LIGHT mode regardless of macOS system Dark Mode.
         self._force_light_theme()
 
-        # ---- UI state ----
         self.status_msg      = tk.StringVar(value="Ready to view.")
         self.phase_var       = tk.StringVar(value="Idle.")
         self.verbose_enabled = tk.BooleanVar(value=False)
@@ -62,7 +57,7 @@ class FSKViewerGUI:
         self.line_count_var  = tk.StringVar(value="0 lines")
 
         self.display_to_filename = {}
-        self.labels = {  # legacy test-harness impairment levels (old captures)
+        self.labels = {
             "lvl0": "Clean (None)",
             "lvl1": "L1: In-band CW",
             "lvl2": "L2: AWGN Floor",
@@ -71,7 +66,6 @@ class FSKViewerGUI:
             "lvl5": "L5: Multipath Fade",
         }
 
-        # ---- Thread / process state ----
         self._busy           = False
         self.current_proc    = None
         self._proc_lock      = threading.Lock()
@@ -81,23 +75,11 @@ class FSKViewerGUI:
         self.refresh_file_list()
         self.root.after(100, self._poll_queue)
 
-    # =====================================================================
-    #  Theme lock (light mode)
-    # =====================================================================
     def _force_light_theme(self):
-        """Force a light appearance even when macOS is in system Dark Mode.
-
-        Path 1 (preferred, macOS Tk 8.6.10+): ask Tk for the native light
-        'aqua' appearance on this window. Widgets keep their native mac look.
-
-        Path 2 (fallback, any platform / older Tk): switch to the 'clam'
-        theme and paint an explicit light palette so nothing inherits dark
-        system colors.
-        """
         try:
             self.root.tk.call("::tk::unsupported::MacWindowStyle",
                               "appearance", self.root, "aqua")
-            return  # Native light aqua achieved; nothing else needed.
+            return  
         except tk.TclError:
             pass
 
@@ -118,24 +100,20 @@ class FSKViewerGUI:
         except Exception:
             pass
 
-    # =====================================================================
-    #  UI construction
-    # =====================================================================
     def build_ui(self):
-
-        info_label = ttk.Label(self.root,
-                               text=f"Baud: {FSK_BAUD}  |  Mark: {FSK_TONE_MARK}Hz  |  Space: {FSK_TONE_SPACE}Hz  |  Bell 202 Compatible",
-                               font=("Arial", 10), foreground="#0066cc")
+        info_text = f"Baud: {FSK_BAUD}  |  Mark: {FSK_TONE_MARK}Hz  |  Space: {FSK_TONE_SPACE}Hz  |  Bell 202 Compatible"
+        if self.passkey:
+            info_text += "  |  🔓 Decryption Active"
+            
+        info_label = ttk.Label(self.root, text=info_text, font=("Arial", 10), foreground="#0066cc")
         info_label.pack(pady=(0, 10))
 
-        # Enforce unified widget layout and color behaviors via TTK Style
         try:
             style = ttk.Style()
             style.configure("TLabelFrame", font=("Arial", 10, "bold"), foreground="#2c3e50")
         except Exception:
             pass
 
-        # --- Capture selection row (no labeled box) ---
         mailbox_frame = ttk.Frame(self.root, padding=(0, 5))
         mailbox_frame.pack(fill="x", padx=20, pady=5)
 
@@ -151,11 +129,10 @@ class FSKViewerGUI:
         self.refresh_btn.grid(row=0, column=2, sticky="w", padx=5, pady=5)
 
         ttk.Label(mailbox_frame,
-                  text=f"(Captures,newest {MAX_CAPTURES_SHOWN} shown)",
+                  text=f"(Captures, newest {MAX_CAPTURES_SHOWN} shown)",
                   font=("Arial", 9, "italic"), foreground="#555").grid(
                       row=1, column=0, columnspan=3, sticky="w", pady=(0, 2))
 
-        # --- Decoder Pipeline Configuration ---
         config_frame = ttk.LabelFrame(self.root, text=" Decoder Settings ", padding=12)
         config_frame.pack(fill="x", padx=20, pady=5)
 
@@ -177,14 +154,12 @@ class FSKViewerGUI:
                                      font=("Arial", 9), foreground="#666")
         line_count_label.pack(anchor="e", padx=20, pady=(0, 2))
 
-        # Light-mode palette matching FSKModIc's input view
         self.text_pane = tk.Text(self.root, wrap="word", font=("Verdana", 11),
                                  background="#ffffff", foreground="#000000",
                                  insertbackground="black", relief="sunken", bd=1,
                                  state="disabled", height=6)
         self.text_pane.pack(fill="both", expand=True, padx=20, pady=5)
 
-        # --- Execution Controls (Bottom Bar Alignment) ---
         btn_frame = ttk.Frame(self.root)
         btn_frame.pack(fill="x", padx=20, pady=(0, 10))
 
@@ -194,7 +169,6 @@ class FSKViewerGUI:
         self.archive_btn = ttk.Button(btn_frame, text="Archive", command=self.archive_workspace_files)
         self.archive_btn.pack(side="left", ipadx=10, ipady=3, padx=(10, 0))
 
-        # Primary action pinned right with ipadx=15, matching Transmit in FSKModIc
         self.decode_btn = ttk.Button(btn_frame, text="Decode", command=self.start_decode)
         self.decode_btn.pack(side="right", ipadx=15, ipady=3)
 
@@ -202,11 +176,7 @@ class FSKViewerGUI:
                                anchor="w", padding=(10, 8), font=("Arial", 11, "normal"))
         status_bar.pack(fill="x", side="bottom")
 
-    # =====================================================================
-    #  Text pane helpers
-    # =====================================================================
     def _update_line_count(self):
-        # end-1c excludes the trailing implicit newline Tk always keeps
         content = self.text_pane.get("1.0", "end-1c")
         count = len(content.splitlines()) if content else 0
         self.line_count_var.set(f"{count} lines")
@@ -230,25 +200,18 @@ class FSKViewerGUI:
         self._set_pane("")
         self.status_msg.set("Display cleared.")
 
-    # =====================================================================
-    #  File list
-    # =====================================================================
     def _friendly_name(self, basename):
         stem = os.path.splitext(basename)[0]
-
-        # legacy impairment-labelled captures
         parts = stem.split("_")
         if len(parts) >= 4 and parts[3] in self.labels:
             return f"{parts[0]}_{parts[1]}_{parts[2]} ({self.labels[parts[3]]})"
 
-        # daemon format: fsk_YYMMDD.HHMMSS (UTC)
         m = TS_RE.match(stem)
         if m:
             d, t = m.group(1), m.group(2)
             pretty = f"20{d[0:2]}-{d[2:4]}-{d[4:6]} {t[0:2]}:{t[2:4]}:{t[4:6]} UTC"
             return f"{stem}  ({pretty})"
 
-        # legacy pipeline format: fsk_YYYYMMDD_HHMMSS
         m = TS_RE_LEGACY.match(stem)
         if m:
             d, t = m.group(1), m.group(2)
@@ -281,7 +244,6 @@ class FSKViewerGUI:
         self.status_msg.set(f"Scan complete. {len(options)} recent capture(s).")
 
     def on_select(self):
-        """Selecting a file shows a cached decode if one exists; never re-runs."""
         disp = self.file_dropdown.get()
         if not disp or "No captures" in disp:
             return
@@ -299,9 +261,6 @@ class FSKViewerGUI:
         self._set_pane("")
         self.status_msg.set(f"Selected {wav}. Click Decode.")
 
-    # =====================================================================
-    #  Busy-state / progress
-    # =====================================================================
     def _set_busy(self, busy):
         self._busy = busy
         en = "disabled" if busy else "normal"
@@ -325,14 +284,7 @@ class FSKViewerGUI:
         self.progress.config(mode="determinate")
         self.progress["value"] = 100 if complete else 0
 
-    # =====================================================================
-    #  Subprocess runner (worker-thread side)
-    # =====================================================================
     def _run_proc(self, cmd, name, stream=True):
-        """Launch cmd, capture combined stdout/stderr, and wait.
-        If stream is True, lines are echoed live to the pane as they arrive;
-        if False, output is captured silently for post-processing.
-        Returns (returncode, captured_text)."""
         try:
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT, text=True, bufsize=1)
@@ -363,17 +315,8 @@ class FSKViewerGUI:
 
         return (proc.returncode, "\n".join(lines))
 
-    # =====================================================================
-    #  Decode (user-driven, threaded)
-    # =====================================================================
     @staticmethod
     def _extract_payload(text):
-        """Pull just the decoded payload out of fsk_demod's full report.
-
-        The report contains a '--- Raw Payload ---' marker; the payload is
-        everything from there until the next '---'/'====' section marker.
-        Falls back to the full text if the marker isn't found (e.g. the
-        demod aborted before printing a payload)."""
         lines = text.splitlines()
         try:
             start = next(i for i, l in enumerate(lines)
@@ -394,8 +337,7 @@ class FSKViewerGUI:
             return
         disp = self.file_dropdown.get()
         if not disp or "No captures" in disp:
-            messagebox.showinfo("No file",
-                "No capture selected. Click Scan first.")
+            messagebox.showinfo("No file", "No capture selected. Click Scan first.")
             return
         wav = self.display_to_filename.get(disp, disp)
         if not os.path.exists(os.path.join(os.getcwd(), wav)):
@@ -419,25 +361,32 @@ class FSKViewerGUI:
                 cmd.append("-v")
                 self.msg_queue.put(("log", "[*] " + " ".join(cmd)))
 
-            # Verbose: stream the full report live. Normal: capture silently
-            # and show only the extracted payload when the decode finishes.
             rc, text = self._run_proc(cmd, "fsk_demod", stream=verbose)
-            # Exit code 2 = payload recovered but CRC mismatch. The payload is
-            # still the display product; the CRC verdict belongs to the -v
-            # report, not the payload pane. Anything else nonzero is a real
-            # failure (no WAV, squelch unbroken, no sync) and stays an error.
             crc_failed = (rc == 2)
             if rc != 0 and not crc_failed:
                 if not verbose and text:
-                    self.msg_queue.put(("set", text))  # show report for debugging
+                    self.msg_queue.put(("set", text))
                 self.msg_queue.put(("error", f"fsk_demod exited with code {rc}")); return
 
             display = text if verbose else self._extract_payload(text)
+
+            # Attempt decryption if passkey provided and not in verbose mode
+            decryption_failed = False
+            if self.passkey and not verbose:
+                try:
+                    fernet = Fernet(derive_key(self.passkey))
+                    decrypted_bytes = fernet.decrypt(display.encode('utf-8'))
+                    display = decrypted_bytes.decode('utf-8')
+                except InvalidToken:
+                    decryption_failed = True
+                    display = f"[!] Decryption failed: Invalid passkey or corrupted token.\n\nRaw Payload:\n{display}"
+                except Exception as e:
+                    decryption_failed = True
+                    display = f"[!] Decryption error: {e}\n\nRaw Payload:\n{display}"
+
             if not verbose:
                 self.msg_queue.put(("set", display))
 
-            # Cache exactly what was displayed, so re-selecting the WAV
-            # reloads the same view.
             txt = os.path.splitext(wav)[0] + ".txt"
             try:
                 with open(os.path.join(os.getcwd(), txt), "w", encoding="utf-8") as fh:
@@ -446,21 +395,17 @@ class FSKViewerGUI:
             except Exception as e:
                 self.msg_queue.put(("log", f"[!] Could not write decode cache: {e}"))
                 self.msg_queue.put(("done_decode", None))
-            # Status strip only -- the payload pane stays clean. Queued after
-            # done_decode so it overrides that handler's status text; the 5 s
-            # reset timer scheduled there still clears it.
-            if crc_failed:
-                self.msg_queue.put(("status",
-                    "\u26a0\ufe0f Decoded, CRC mismatch (details via Verbose)."))
+
+            if decryption_failed:
+                self.msg_queue.put(("status", "\u26a0\ufe0f Decoded, but Decryption Failed (Check Passkey)."))
+            elif crc_failed:
+                self.msg_queue.put(("status", "\u26a0\ufe0f Decoded, CRC mismatch (details via Verbose)."))
         except Exception as e:
             self.msg_queue.put(("error", f"Decode fault: {e}"))
         finally:
             with self._proc_lock:
                 self.current_proc = None
 
-    # =====================================================================
-    #  Queue pump (main thread): all widget updates happen here
-    # =====================================================================
     def _poll_queue(self):
         try:
             while True:
@@ -504,9 +449,6 @@ class FSKViewerGUI:
         self._append_pane(f"\n[!] {msg}")
         self.status_msg.set("\u26a0\ufe0f Error - see output.")
 
-    # =====================================================================
-    #  Archive
-    # =====================================================================
     def archive_workspace_files(self):
         if self._busy:
             return
@@ -543,6 +485,15 @@ class FSKViewerGUI:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="PALMETTO RX FSK Viewer / Decoder")
+    parser.add_argument("-p", "--passkey", nargs="?", const="", 
+                        help="Passkey for payload decryption (prompts if omitted)")
+    args = parser.parse_args()
+
+    passkey = args.passkey
+    if passkey == "":
+        passkey = getpass.getpass("Enter decryption passkey: ")
+
     root = tk.Tk()
-    app = FSKViewerGUI(root)
+    app = FSKViewerGUI(root, passkey=passkey)
     root.mainloop()
