@@ -6,6 +6,9 @@ import threading
 import glob
 import shutil
 import subprocess
+import argparse
+import base64
+import getpass
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
@@ -21,6 +24,10 @@ try:
     import serial
 except ImportError:
     serial = None
+
+from cryptography.fernet import Fernet
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 # --- User Adjustable Configuration Variables ---
 MAX_PAYLOAD_CHARS = 512
@@ -56,18 +63,27 @@ MORSE_DICT = {
     '5': '.....', '6': '-....', '7': '--...', '8': '---..', '9': '----.'
 }
 
+def derive_key(passkey: str) -> bytes:
+    """Derive a secure Fernet 32-byte key from a text passkey using PBKDF2."""
+    salt = b'palmetto_fsk_static_salt'  # Static salt for consistent derivation between TX/RX
+    kdf = PBKDF2HMAC(
+        algorithm=hashes.SHA256(),
+        length=32,
+        salt=salt,
+        iterations=100000,
+    )
+    return base64.urlsafe_b64encode(kdf.derive(passkey.encode('utf-8')))
+
 class FSKModulatorGUI:
-    def __init__(self, root):
+    def __init__(self, root, passkey=None):
         self.root = root
-        # Match the window title style of the demodulator[cite: 1, 2]
-        self.root.title("PALMETTO TX")
+        self.passkey = passkey
+        self.root.title("PALMETTO TX" + (" (Encrypted)" if self.passkey else ""))
         self.root.geometry("650x650")
         self.root.minsize(600, 520)
 
-        # Pin the GUI to LIGHT mode regardless of system Dark Mode[cite: 1].
         self._force_light_theme()
 
-        # --- UI State Variables ---
         self.callsign_var = tk.StringVar(value="")
         self.repeat_count = tk.StringVar(value="1")
         self.gap_secs = tk.StringVar(value=str(int(GAP_SECONDS)))
@@ -75,9 +91,6 @@ class FSKModulatorGUI:
 
         self.build_ui()
 
-    # =====================================================================
-    #  Theme lock (light mode) - Imported from FSKDemodIc.py[cite: 1]
-    # =====================================================================
     def _force_light_theme(self):
         try:
             self.root.tk.call("::tk::unsupported::MacWindowStyle",
@@ -104,19 +117,18 @@ class FSKModulatorGUI:
             pass
 
     def build_ui(self):
-        # Enforce unified widget layout and color behaviors via TTK Style[cite: 1]
         try:
             style = ttk.Style()
             style.configure("TLabelFrame", font=("Arial", 10, "bold"), foreground="#2c3e50")
         except Exception:
             pass
 
-        info_label = ttk.Label(self.root,
-                               text=f"Baud: {FSK_BAUD}  |  Mark: {FSK_TONE_MARK}Hz  |  Space: {FSK_TONE_SPACE}Hz  |  Bell 202 Compatible",
-                               font=("Arial", 10), foreground="#0066cc")
+        info_text = f"Baud: {FSK_BAUD}  |  Mark: {FSK_TONE_MARK}Hz  |  Space: {FSK_TONE_SPACE}Hz  |  Bell 202 Compatible"
+        if self.passkey:
+            info_text += "  |  🔒 Encrypted"
+        info_label = ttk.Label(self.root, text=info_text, font=("Arial", 10), foreground="#0066cc")
         info_label.pack(pady=(15, 10))
 
-        # --- Top Compliance / Callsign Field ---
         callsign_frame = ttk.LabelFrame(self.root, text=" Regulatory Compliance ", padding=12)
         callsign_frame.pack(fill="x", padx=20, pady=5)
         
@@ -131,21 +143,19 @@ class FSKModulatorGUI:
         ttk.Label(callsign_frame, text="(Max 6 characters)", 
                   font=("Arial", 9, "italic"), foreground="#555").grid(row=0, column=2, sticky="w", pady=5)
 
-        # --- Transmission Settings ---
         config_frame = ttk.LabelFrame(self.root, text=" Transmission Settings ", padding=12)
         config_frame.pack(fill="x", padx=20, pady=5)
 
         ttk.Label(config_frame, text="Repeats (Time Diversity):").grid(row=0, column=0, sticky="w", pady=5)
         repeat_spin = ttk.Spinbox(config_frame, from_=1, to=10, textvariable=self.repeat_count, width=5)
         repeat_spin.grid(row=0, column=1, sticky="w", padx=10, pady=5)
-        ttk.Label(config_frame, text="(Repeats)", font=("Arial", 9, "italic"), foreground="#555").grid(row=0, column=2, sticky="w", padx=5, pady=5)
+        ttk.Label(config_frame, text="(Repeats)", font=("Arial", 9, "italic"), foreground="#555").grid(row=0, column=2, sticky="w", pady=5)
 
         ttk.Label(config_frame, text="Inter-frame gap (s):").grid(row=1, column=0, sticky="w", pady=5)
         gap_spin = ttk.Spinbox(config_frame, from_=0, to=30, increment=1, textvariable=self.gap_secs, width=5)
         gap_spin.grid(row=1, column=1, sticky="w", padx=10, pady=5)
-        ttk.Label(config_frame, text="(Seconds)", font=("Arial", 9, "italic"), foreground="#555").grid(row=1, column=2, sticky="w", padx=5, pady=5)
+        ttk.Label(config_frame, text="(Seconds)", font=("Arial", 9, "italic"), foreground="#555").grid(row=1, column=2, sticky="w", pady=5)
 
-        # --- Message Payload ---
         input_frame = ttk.LabelFrame(self.root, text=" Message Payload ", padding=12)
         input_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
@@ -155,7 +165,6 @@ class FSKModulatorGUI:
         char_count_label = ttk.Label(input_frame, textvariable=self.char_count_var, font=("Arial", 9), foreground="#666")
         char_count_label.pack(anchor="e", pady=(0, 2))
 
-        # Light-mode palette matching FSKDemodIc's text view[cite: 1]
         self.payload_entry = tk.Text(input_frame, wrap="word", font=("Verdana", 11),
                                      background="#ffffff", foreground="#000000",
                                      insertbackground="black", relief="sunken", bd=1,
@@ -163,7 +172,6 @@ class FSKModulatorGUI:
         self.payload_entry.pack(fill="both", expand=True, pady=5)
         self.payload_entry.bind("<KeyRelease>", self.update_char_count)
 
-        # --- Execution Controls (Bottom Bar Alignment) ---
         btn_frame = ttk.Frame(self.root)
         btn_frame.pack(fill="x", padx=20, pady=(0, 10))
 
@@ -173,7 +181,6 @@ class FSKModulatorGUI:
         self.archive_btn = ttk.Button(btn_frame, text="Archive", command=self.archive_workspace_files)
         self.archive_btn.pack(side="left", ipadx=10, ipady=3, padx=(10, 0))
 
-        # Primary action pinned right with ipadx=15[cite: 1]
         self.send_btn = ttk.Button(btn_frame, text="Transmit", command=self.process_and_send)
         self.send_btn.pack(side="right", ipadx=15, ipady=3)
 
@@ -206,7 +213,6 @@ class FSKModulatorGUI:
         element_gap = dot_duration
         character_gap = dot_duration * 3
         
-        # --- Set the target amplitude to match the FSK payload (-7.2 dBFS) ---
         cw_amplitude = 0.4363
         
         morse_parts = []
@@ -219,8 +225,6 @@ class FSKModulatorGUI:
                 num_samples = int(round(duration * SAMPLE_RATE))
                 
                 t = np.arange(num_samples) / SAMPLE_RATE
-                
-                # --- Apply the amplitude multiplier to the sine wave ---
                 tone = (cw_amplitude * np.sin(2 * np.pi * MORSE_FREQ * t)).astype(np.float32)
                 
                 ramp_samples = min(int(0.005 * SAMPLE_RATE), num_samples // 2)
@@ -320,9 +324,15 @@ class FSKModulatorGUI:
         try:
             self.root.after(0, lambda: self.status_msg.set("\u23f3 Generating compound wave..."))
 
+            # If a passkey is provided, encrypt the payload bytes
+            final_payload_bytes = payload_bytes
+            if self.passkey:
+                fernet = Fernet(derive_key(self.passkey))
+                final_payload_bytes = fernet.encrypt(payload_bytes)
+
             temp_txt = "temp_payload.txt"
             with open(temp_txt, "wb") as f:
-                f.write(payload_bytes)
+                f.write(final_payload_bytes)
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             output_wav = f"fsk_{timestamp}.wav"
@@ -407,6 +417,15 @@ class FSKModulatorGUI:
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="PALMETTO TX FSK Modulator")
+    parser.add_argument("-p", "--passkey", nargs="?", const="", 
+                        help="Passkey for payload encryption (prompts if omitted)")
+    args = parser.parse_args()
+
+    passkey = args.passkey
+    if passkey == "":
+        passkey = getpass.getpass("Enter encryption passkey: ")
+
     root = tk.Tk()
-    app = FSKModulatorGUI(root)
+    app = FSKModulatorGUI(root, passkey=passkey)
     root.mainloop()
