@@ -1,0 +1,47 @@
+Part 95 Approved Handhelds (MURS/GMRS)
+These radios are legally certified for Part 95 frequencies and are fully compatible with the Kenwood K1 mic plug.
+
+1. BTECH MURS-V2
+- Weather Resistance: Features an IP54 casing to withstand tough conditions and dust.
+- Flexibility: Customize channels for MURS, NOAA weather, or scanner purposes.
+- Price: ~$55
+
+2. Wouxun KG-805M
+- Capabilities: Full 2-watt transmit power across all 5 MURS channels.
+- Durability: Built with an IP55 water-resistant rating for outdoor environments.
+- Price: ~$100
+
+3. BTECH GMRS-V2
+- Display: Features a highly capable dual display with two independent push-to-talk buttons.
+- Scanning: Monitor standard VHF and UHF channels while actively operating on GMRS.
+- Price: ~$60
+
+4. TERA TR-505
+- Certifications: FCC Part 95 certified, capable of being programmed for either GMRS or MURS.
+- Battery: Up to 30 hours of operation with the supplied 1600 mAh lithium-ion battery in power-saver mode, plus voice announcements for battery life.
+- Price: ~$117
+
+--------------------------------------------------
+
+Non-Part 95 Handhelds (MURS Capable)
+These are unlocked amateur/commercial radios that can physically tune to the 151-154 MHz MURS frequencies and utilize the Kenwood K1 plug.
+
+1. Baofeng UV-5R
+- Channels: Includes 128 programmable memory channels with VFO tuning.
+- Compact Size: Very lightweight footprint, though it lacks dedicated water resistance.
+- Price: ~$30
+
+2. Baofeng UV-82
+- Design: A taller, more robust form factor compared to standard entry-level models.
+- Audio: Equipped with a notably louder and richer internal speaker and a dual PTT button.
+- Price: ~$45
+
+3. TYT TH-UV88
+- Memory: Holds up to 200 channels for extensive scanning lists.
+- Display: Features a high-contrast dot-matrix screen that is significantly easier to read.
+- Price: ~$30
+
+4. TERA TR-500
+- Build Quality: Rugged, high-performance 16-channel Part 90 commercial transceiver.
+- Battery: Operates 30+ hours between charges with voice announcements for battery life.
+- Price: ~$130
