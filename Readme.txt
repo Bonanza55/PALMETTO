@@ -9,10 +9,11 @@ MURS for non hams, and simplex [147.550] for hams.
 -----------------------
 1. Extract Archive: 
    - mkdir PALMETTO
-   - Copy tar file into PALMETTO
-   - MacOS [ARM]: tar -xvf dist_macos_arm.tar .
-   - Linux [PI5]: tar -xvf dist_pi5_arm.tar .
-   - Linux [X86]: tar -xvf dist_linux_x86.tar .
+   - Copy [your os]tar.gz.part-[aa,ab,ac] file into PALMETTO
+     - cat dist_macos_arm.tar.gz.part-* > dist_macos_arm.tar.gz
+   - MacOS [ARM]: tar -zxvpf dist_macos_arm.tar.gz .
+   - Linux [PI5]: tar -zxvpf dist_pi5_arm.tar .
+   - Linux [X86]: tar -zxvpf dist_linux_x86.tar .
 2. Install Dependencies:
    - macOS: Run "brew install portaudio"
    - Linux: Run "sudo apt install libportaudio2 portaudio19-dev"
