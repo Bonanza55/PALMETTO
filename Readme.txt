@@ -12,8 +12,8 @@ MURS for non hams, and simplex [147.550] for hams.
    - Copy [your os]tar.gz.part-[aa,ab,ac] file into PALMETTO
      - cat dist_macos_arm.tar.gz.part-* > dist_macos_arm.tar.gz
    - MacOS [ARM]: tar -zxvpf dist_macos_arm.tar.gz .
-   - Linux [PI5]: tar -zxvpf dist_pi5_arm.tar .
-   - Linux [X86]: tar -zxvpf dist_linux_x86.tar .
+   - Linux [PI5]: tar -zxvpf dist_pi5_arm.tar.gz .
+   - Linux [X86]: tar -zxvpf dist_linux_x86.tar.gz .
 2. Install Dependencies:
    - macOS: Run "brew install portaudio"
    - Linux: Run "sudo apt install libportaudio2 portaudio19-dev"
@@ -22,6 +22,7 @@ MURS for non hams, and simplex [147.550] for hams.
        - Install_Gcc_Linux.txt
        - Install_Gcc_MacOS.txt
    - Option 2: Skip compilation and run the pre-built binaries.
+4. Remove the *tar.gz.part-* files but keep the *.tar.gz file. 
 
 2. Hardware Requirements & Connections
 --------------------------------------
