@@ -10,13 +10,14 @@ MURS for non hams, and simplex [147.550] for hams.
 1. Extract Archive: 
    - mkdir PALMETTO
    - Copy [your os]tar.gz.part-[aa,ab,ac,ad] file into PALMETTO
-     - cat dist_macos_arm.tar.gz.part-* > dist_macos_arm.tar.gz
+     - Example: cat dist_macos_arm.tar.gz.part-* > dist_macos_arm.tar.gz
    - MacOS [ARM]: tar -zxvpf dist_macos_arm.tar.gz .
-   - Linux [PI5]: tar -zxvpf dist_pi5_arm.tar.gz .
+   - Linux [PI5]: tar -zxvpf dist_linux_arm.tar.gz .
    - Linux [X86]: tar -zxvpf dist_linux_x86.tar.gz .
 2. Install Dependencies:
    - macOS: Run "brew install portaudio"
    - Linux: Run "sudo apt install libportaudio2 portaudio19-dev"
+   - Linux: Run "pip3 install numpy scipy sounddevice pyserial cryptography"
    - Run this on Linux $newgrp dialout
 3. Build Binaries (Choose Option 1 or Option 2):
    - Option 1: Run "make clean" followed by "make all" (See gcc install instructions).
@@ -41,6 +42,13 @@ Start the background listener and graphical user interface using the following t
 1. Start the Listener:
    ./audio_rx_demod -v > audio_rx_demod.log 2>&1 &
 
-2. Start the GUI:
+2. Start the binary GUI:
   For MacOS ./palmetto.mac &
   For Linux ./palmetto &
+
+3. Run the python GUI:
+   ptyhon3 -m venv venv
+   source ./venv/bin/activate
+   python3 ./palmetto.py &
+
+4. You might have to debug the setup. Just use AI.
