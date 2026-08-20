@@ -17,6 +17,7 @@ MURS for non hams, and simplex [147.550] for hams.
 2. Install Dependencies:
    - macOS: Run "brew install portaudio"
    - Linux: Run "sudo apt install libportaudio2 portaudio19-dev"
+   - Run this on Linux $newgrp dialout
 3. Build Binaries (Choose Option 1 or Option 2):
    - Option 1: Run "make clean" followed by "make all" (See gcc install instructions).
        - Install_Gcc_Linux.txt
