@@ -51,4 +51,4 @@ Start the background listener and graphical user interface using the following t
    source ./venv/bin/activate
    python3 ./palmetto.py &
 
-4. You might have to debug the setup. Just use AI.
+4. You might have to debug the setup. Just use AI. Contact me at n4omg@pm.me
