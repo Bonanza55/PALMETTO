@@ -1,7 +1,7 @@
 PALMETTO Digital Messaging System
 
 Welcome to PALMETTO, a unified packet VHF/UHF radio transceiver 
-and FSK demodulation package off grid radio operators.
+and FSK demodulation package for off grid radio operators.
 
 MURS for non hams, and simplex [147.550] for hams. 
 
