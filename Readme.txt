@@ -41,6 +41,5 @@ Start the background listener and graphical user interface using the following t
    ./audio_rx_demod -v > audio_rx_demod.log 2>&1 &
 
 2. Start the GUI:
-   ./palmetto.mac &
-   ./palmetto.pi5 &
-   ./palmetto.lin &
+  For MacOS ./palmetto.mac &
+  For Linux ./palmetto &
