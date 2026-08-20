@@ -9,7 +9,7 @@ MURS for non hams, and simplex [147.550] for hams.
 -----------------------
 1. Extract Archive: 
    - mkdir PALMETTO
-   - Copy [your os]tar.gz.part-[aa,ab,ac] file into PALMETTO
+   - Copy [your os]tar.gz.part-[aa,ab,ac,ad] file into PALMETTO
      - cat dist_macos_arm.tar.gz.part-* > dist_macos_arm.tar.gz
    - MacOS [ARM]: tar -zxvpf dist_macos_arm.tar.gz .
    - Linux [PI5]: tar -zxvpf dist_pi5_arm.tar.gz .
