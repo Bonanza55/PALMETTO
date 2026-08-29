@@ -26,7 +26,9 @@ II. Running the System
 
    optional
      --node-id [0,1,2,etc] is useful in a mesh.
-     -p [passkey] shared passkey for encryption. Must be the same on all nodes.
+     -p [passkey] Shared passkey for encryption. 
+                  Must be the same on all nodes.
+                  Military use only.
 
 2. To view the log file run:
      cat audio_rx_demod.log
