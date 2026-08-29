@@ -12,7 +12,7 @@ I. Installation & Setup
 1. Extract Archive: 
    - mkdir PALMETTO
    - Download dist_[your os].tar.gz.part-[aa,ab,ac,ad] file into PALMETTO
-     - Ex: cat dist_macos_arm.tar.gz.part-* > dist_macos_arm.tar.gz
+     - combine: cat dist_macos_arm.tar.gz.part-* > dist_macos_arm.tar.gz
    - MacOS [ARM]: tar -zxvpf dist_macos_arm.tar.gz 
    - Linux [PI5]: tar -zxvpf dist_linux_arm.tar.gz 
    - Linux [X86]: tar -zxvpf dist_linux_x86.tar.gz
