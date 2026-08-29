@@ -20,13 +20,13 @@ I. Installation & Setup
 II. Running the System
 --------_-------------
 1. Start the GUI:
-   ./palmetto.mac [--node-id 0] [-e passkey] &
+   ./palmetto.mac [--node-id 0] [-p passkey] &
    ./palmetto.pi5 &
    ./palmetto.lin &
 
    optional
      --node-id [0,1,2,etc] is useful in a mesh.
-     -e [passkey] shared passkey for encryption. Must be the same on all nodes.
+     -p [passkey] shared passkey for encryption. Must be the same on all nodes.
 
 2. To view the log file run:
      cat audio_rx_demod.log
