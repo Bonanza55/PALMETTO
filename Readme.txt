@@ -1,32 +1,37 @@
-PALMETTO Digital Messaging System
+PALMETTO Digital Messaging System w/ Mesh
 
-Welcome to PALMETTO, a unified packet VHF/UHF radio transceiver 
+Welcome to PALMETTO, a unified simplex packet VHF/UHF radio transceiver 
 and FSK demodulation package for off grid radio operators.
 
 MURS for non hams, and simplex [147.550] for hams. 
 
-1. Installation & Setup
+Radio must me connected and turned on and at least 2 operators. 
+
+I. Installation & Setup
 -----------------------
 1. Extract Archive: 
    - mkdir PALMETTO
-   - Copy [your os]tar.gz.part-[aa,ab,ac,ad] file into PALMETTO
-     - Example: cat dist_macos_arm.tar.gz.part-* > dist_macos_arm.tar.gz
-   - MacOS [ARM]: tar -zxvpf dist_macos_arm.tar.gz .
-   - Linux [PI5]: tar -zxvpf dist_linux_arm.tar.gz .
-   - Linux [X86]: tar -zxvpf dist_linux_x86.tar.gz .
-2. Install Dependencies:
-   - macOS: Run "brew install portaudio"
-   - Linux: Run "sudo apt install libportaudio2 portaudio19-dev"
-   - Linux: Run "pip3 install numpy scipy sounddevice pyserial cryptography"
-   - Run this on Linux $newgrp dialout
-3. Build Binaries (Choose Option 1 or Option 2):
-   - Option 1: Run "make clean" followed by "make all" (See gcc install instructions).
-       - Install_Gcc_Linux.txt
-       - Install_Gcc_MacOS.txt
-   - Option 2: Skip compilation and run the pre-built binaries.
-4. Remove the *tar.gz.part-* files but keep the *.tar.gz file. 
+   - Download [your os]tar.gz.part-[aa,ab] file into PALMETTO
+     - Ex: cat dist_macos_arm.tar.gz.part-* > dist_macos_arm.tar.gz
+   - MacOS [ARM]: tar -zxvpf dist_macos_arm.tar.gz 
+   - Linux [PI5]: tar -zxvpf dist_linux_arm.tar.gz 
+   - Linux [X86]: tar -zxvpf dist_linux_x86.tar.gz
 
-2. Hardware Requirements & Connections
+II. Running the System
+--------_-------------
+1. Start the GUI:
+   ./palmetto.mac [--node-id 0] [-e passkey] &
+   ./palmetto.pi5 &
+   ./palmetto.lin &
+
+   optional
+     --node-id [0,1,2,etc] is useful in a mesh.
+     -e [passkey] shared passkey for encryption. Must be the same on all nodes.
+
+2. To view the log file run:
+     cat audio_rx_demod.log
+
+III. Hardware Requirements & Connections
 --------------------------------------
 - Transceiver: Tera TR-500 (for HAM) or TR-505 (for MURS). See other options. 
   - Radios.txt
@@ -35,20 +40,5 @@ MURS for non hams, and simplex [147.550] for hams.
   - Digirig Interface Cable for Icom HT (Gigaparts ZDR-ICOHT-CB). About $23.00 each.
   - USB-C to USB-B cable. About $18.00 each
 
-3. Running the System
----------------------
-Start the background listener and graphical user interface using the following terminal commands:
 
-1. Start the Listener:
-   ./audio_rx_demod -v > audio_rx_demod.log 2>&1 &
-
-2. Start the binary GUI:
-  For MacOS ./palmetto.mac &
-  For Linux ./palmetto &
-
-3. Run the python GUI:
-   ptyhon3 -m venv venv
-   source ./venv/bin/activate
-   python3 ./palmetto.py &
-
-4. You might have to debug the setup. Just use AI. Contact me at n4omg@pm.me
+You might have to debug the setup. Just use AI. Contact me at n4omg@pm.me
