@@ -5,7 +5,7 @@ and FSK demodulation package for off grid radio operators.
 
 MURS for non hams, and simplex [147.550] for hams. 
 
-Radio must me connected and turned on and at least 2 operators. 
+Radio must be connected and turned on and at least 2 operators. 
 
 I. Installation & Setup
 -----------------------
