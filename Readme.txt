@@ -18,19 +18,16 @@ I. Installation & Setup
    - Linux [X86]: tar -zxvpf dist_linux_x86.tar.gz
 
 II. Running the System
---------_-------------
-1. Start the GUI:
-   ./palmetto.mac [--node-id 0] [-p passkey] &
+----------------------
+1. Open the config.txt and set the callsign, node; and any other settings.
+   NOTE: passkey must be same on all nodes and is for military use only. 
+
+2. Start the GUI:
+   ./palmetto.mac &
    ./palmetto.pi5 &
    ./palmetto.lin &
-
-   optional
-     --node-id [0,1,2,etc] is useful in a mesh.
-     -p [passkey] Shared passkey for encryption. 
-                  Must be the same on all nodes.
-                  Military use only.
-
-2. To view the log file run:
+  
+3. To view the log file run:
      cat audio_rx_demod.log
 
 III. Hardware Requirements & Connections
