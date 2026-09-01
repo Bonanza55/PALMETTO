@@ -12,7 +12,7 @@ squelch_dbfs        = -30.0    # audio_rx_demod: capture threshold, dBFS
 hang_time_ms        = 1500     # audio_rx_demod: quiet time before decode fires
 carrier_preamble_ms = 1000     # fsk_mod: squelch wake-up burst, ms (0 disables)
 
-callsign            = N4OMG    # palmetto.py: prefills the station ID field
+callsign            =          # palmetto.py: prefills the station ID field
 node_id             = 0        # palmetto.py: trailing-ID slot, unique per node
 passkey             =          # palmetto.py: blank = plaintext, no prompt
 ppt_port            =          # palmetto.py: overide PTT port if needed 
