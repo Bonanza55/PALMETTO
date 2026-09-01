@@ -1,0 +1,18 @@
+# PALMETTO shared config
+#
+# Read by fsk_mod, audio_rx_demod and palmetto.py. Each program takes the keys
+# it needs and ignores the rest. Delete this file entirely and all three fall
+# back to their compiled-in defaults.
+#
+# Format:  key = value    '#' starts a comment at line start or after a space
+#                         (so a passkey containing '#' is safe)
+# Keys are case insensitive. An explicit command line flag beats this file.
+
+squelch_dbfs        = -30.0    # audio_rx_demod: capture threshold, dBFS
+hang_time_ms        = 1500     # audio_rx_demod: quiet time before decode fires
+carrier_preamble_ms = 1000     # fsk_mod: squelch wake-up burst, ms (0 disables)
+
+callsign            = N4OMG    # palmetto.py: prefills the station ID field
+node_id             = 0        # palmetto.py: trailing-ID slot, unique per node
+passkey             =          # palmetto.py: blank = plaintext, no prompt
+ppt_port            =          # palmetto.py: overide PTT port if needed 
